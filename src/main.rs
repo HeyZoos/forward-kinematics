@@ -43,6 +43,14 @@ impl Segment {
         }
     }
 
+    fn angle(&self) -> f32 {
+        if let Some(parent) = &self.parent {
+            parent.angle() + self.angle
+        } else {
+            self.angle
+        }
+    }
+
     fn start(&self) -> Vec2 {
         if let Some(parent) = &self.parent {
             parent.end()
@@ -52,8 +60,8 @@ impl Segment {
     }
 
     fn end(&self) -> Vec2 {
-        let x = self.length * self.angle.cos() + self.start().x;
-        let y = self.length * self.angle.sin() + self.start().y;
+        let x = self.length * self.angle().cos() + self.start().x;
+        let y = self.length * self.angle().sin() + self.start().y;
         vec2(x, y)
     }
 }
