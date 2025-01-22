@@ -7,7 +7,9 @@ fn main() {
 fn view(app: &App, frame: Frame) {
     let draw = app.draw();
     draw.background().color(CORNFLOWERBLUE);
-    Segment::new(vec2(app.time, 0.0), 100.0, app.time).render(&draw);
+    let root = Segment::root(vec2(app.time, 0.0), 100.0, app.time);
+    let s1 = Segment::cont(Box::new(root), 100.0, deg_to_rad(45.0));
+    s1.render(&draw);
     draw.to_frame(app, &frame).unwrap();
 }
 
@@ -19,22 +21,54 @@ struct Segment {
     start: Vec2,
     length: f32,
     angle: f32,
+    parent: Option<Box<Segment>>,
 }
 
 impl Segment {
-    fn new(start: Vec2, length: f32, angle: f32) -> Self {
+    fn root(start: Vec2, length: f32, angle: f32) -> Self {
         Self {
             start,
             length,
             angle,
+            parent: None,
         }
+    }
+
+    fn cont(parent: Box<Segment>, length: f32, angle: f32) -> Self {
+        Self {
+            length,
+            angle,
+            start: vec2(0.0, 0.0),
+            parent: Some(parent),
+        }
+    }
+
+    fn start(&self) -> Vec2 {
+        if let Some(parent) = &self.parent {
+            parent.end()
+        } else {
+            self.start
+        }
+    }
+
+    fn end(&self) -> Vec2 {
+        let x = self.length * self.angle.cos() + self.start().x;
+        let y = self.length * self.angle.sin() + self.start().y;
+        vec2(x, y)
     }
 }
 
 impl Render for Segment {
     fn render(&self, draw: &Draw) {
-        let x = self.length * self.angle.cos() + self.start.x;
-        let y = self.length * self.angle.sin() + self.start.y;
-        draw.line().start(self.start).end(vec2(x, y));
+        let mut drawing = draw.line();
+
+        drawing = if let Some(parent) = &self.parent {
+            parent.render(draw);
+            drawing.color(YELLOW)
+        } else {
+            drawing.color(RED)
+        };
+
+        drawing.start(self.start()).end(self.end());
     }
 }
